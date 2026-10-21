@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Waking up...</title>
+<style>
+  :root { --accent: #8B5CF6; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    background: #0b0f17; color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+  }
+  /* hidden until the first probe fails - an awake server forwards instantly
+     and the viewer never sees this card at all */
+  .card { display: none; text-align: center; padding: 0 24px; max-width: 420px; }
+  .card.on { display: block; }
+  .ring {
+    width: 46px; height: 46px; margin: 0 auto 26px;
+    border: 3px solid rgba(255,255,255,0.14); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.9s linear infinite;
+  }
+  .brand { font-size: 13px; letter-spacing: 0.32em; text-transform: uppercase;
+           font-weight: 600; color: rgba(255,255,255,0.6); margin-bottom: 10px; }
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .elapsed { font-variant-numeric: tabular-nums; font-size: 13px;
+             color: rgba(255,255,255,0.55); margin-bottom: 22px; }
+  .hint { font-size: 12.5px; line-height: 1.6; color: rgba(255,255,255,0.4); }
+  .ready { color: #34d399; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .ring { animation-duration: 2.4s; } }
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="ring"></div>
+  <p class="brand" id="brand">Vidium</p>
+  <h1 id="msg">The server is waking up.</h1>
+  <p class="elapsed" id="elapsed">Elapsed: 0s</p>
+  <p class="hint">Server sleeps when noone uses it. Should take less than or around a minute.</p>
+</div>
+<script>
+/* ============ configuration (edit these) ============ */
+var CONFIG = {
+  APP: 'https://vidium.crosmakesgames.com',  // your Render URL (or its custom domain)
+  BRAND: 'Vidium',                      // shown above the message
+  MESSAGE: 'The server is waking up',     // the headline
+  ACCENT: '#8B5CF6'                       // spinner color (player brand accent)
+};
+/* ============ end configuration ============ */
+(function () {
+  var q = new URLSearchParams(location.search);
+  /* deep link to forward to once awake - path only, so the page can't be
+     used to redirect to someone else's site.
+     Preferred format (no query needed, looks like the real site):
+       https://vidiumembed.crosmakesgames.com/tv/105248/1/1
+     GitHub Pages serves this 404.html for any missing path while keeping
+     the URL in the address bar, so the path itself becomes the deep link.
+     The old ?to=/tv/... format still works. */
+  var to = q.get('to');
+  if (to !== null) {
+    if (to.charAt(0) !== '/' || to.slice(0, 2) === '//') to = '/';
+  } else {
+    var p = decodeURIComponent(location.pathname);
+    if (/^\/tv\/\d+\/\d+\/\d+\/?$/.test(p) || /^\/movie\/\d+\/?$/.test(p)) to = p;
+    else if (/^\/vidium\/?$/.test(p)) to = '/vidium';
+    else to = '/';
+  }
+  document.getElementById('brand').textContent = CONFIG.BRAND;
+  document.getElementById('msg').textContent = CONFIG.MESSAGE;
+  document.documentElement.style.setProperty('--accent', CONFIG.ACCENT);
+  var revealed = false, ready = false, t0 = Date.now(), timer = null;
+  function tick() {
+    document.getElementById('elapsed').textContent =
+      'Elapsed: ' + Math.floor((Date.now() - t0) / 1000) + 's';
+  }
+  /* first probe failed: the instance really is asleep - show the card */
+  function reveal() {
+    if (revealed) return;
+    revealed = true;
+    document.getElementById('card').className = 'card on';
+    t0 = Date.now();
+    tick();
+    timer = setInterval(tick, 1000);
+  }
+  function forward() {
+    if (ready) return;
+    ready = true;
+    if (timer) clearInterval(timer);
+    var msg = document.getElementById('msg');
+    msg.textContent = 'Ready - starting';
+    msg.className = 'ready';
+    /* tiny pause so the viewer sees it flip before the navigation */
+    setTimeout(function () { location.href = CONFIG.APP + to; }, 300);
+  }
+  /* first poll gets a short leash: an awake server answers instantly and the
+     viewer is forwarded with no sleep screen at all */
+  function poll(first) {
+    var ctrl = ('AbortController' in window) ? new AbortController() : null;
+    var bail = ctrl && setTimeout(function () { ctrl.abort(); }, first ? 1200 : 6000);
+    fetch(CONFIG.APP + '/health', { cache: 'no-store', signal: ctrl ? ctrl.signal : undefined })
+      .then(function (r) { return r.ok; })
+      .then(function (ok) {
+        if (bail) clearTimeout(bail);
+        if (ok) { forward(); return; }
+        throw new Error('not ok');
+      })
+      .catch(function () {
+        if (bail) clearTimeout(bail);
+        if (first) { reveal(); setTimeout(function () { poll(false); }, 1000); return; }
+        setTimeout(poll, 2000);
+      });
+  }
+  poll(true);
+})();
+</script>
+</body>
+</html>
