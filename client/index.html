@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Vidium</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="/v/style.css">
+</head>
+<body>
+<main id="stage">
+  <div id="player-shell" class="shell">
+    <video id="video" playsinline preload="auto"></video>
+    <div id="backdrop-tint"></div>
+
+    <!-- Viduki-style info overlay: shows while resolving and while paused -->
+    <div id="idle" hidden>
+      <div id="idle-backdrop"></div>
+      <div id="idle-inner">
+        <p id="idle-eyebrow">YOU'RE WATCHING</p>
+        <h2 id="idle-title">Loading</h2>
+        <p id="idle-season"></p>
+        <div id="idle-meta"></div>
+        <h3 id="idle-ep-name"></h3>
+        <p id="idle-desc"></p>
+        <div id="idle-actions">
+          <button id="idle-resume" hidden>Resume from <span id="idle-resume-pos"></span></button>
+          <button id="idle-play" hidden>Play</button>
+        </div>
+      </div>
+      <div id="idle-side">
+        <button id="side-pip" class="side-btn" aria-label="Miniplayer" title="Miniplayer"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 11h-8v6h8v-6zm4 8V5a2 2 0 0 0-2-2H3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h18a2 2 0 0 1-2-2zm-2 .5H3V5h18v14.5z"/></svg></button>
+        <button id="side-full" class="side-btn" aria-label="Fullscreen" title="Fullscreen"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg></button>
+      </div>
+    </div>
+
+    <div id="title-overlay">
+      <h1 id="media-title">Loading</h1>
+      <p id="media-sub"></p>
+    </div>
+
+    <div id="subtitle-box" class="subtitle-box" aria-live="polite"></div>
+
+    <div id="center-flash" class="center-flash"></div>
+
+    <div id="skip-intro" class="skip-intro" hidden>
+      <button id="skip-intro-btn">Skip Intro</button>
+    </div>
+
+    <button id="resume-btn" class="resume-btn" hidden>Resume from <span id="resume-pos"></span></button>
+
+    <button id="unmute-chip" class="unmute-chip" hidden>Sound off - tap to unmute</button>
+
+    <div id="error-card" class="error-card" hidden>
+      <p id="error-msg"></p>
+      <div class="error-row">
+        <button id="retry-btn">Retry</button>
+        <button id="retry-mock">Play test video instead</button>
+      </div>
+    </div>
+
+    <div id="controls" class="controls" aria-hidden="false">
+      <div id="seek-wrap">
+        <div id="seek-hover" class="seek-hover" hidden><span id="seek-hover-time">0:00</span></div>
+        <div id="seek-buffered"></div>
+        <div id="seek-played"></div>
+        <div id="seek-knob"></div>
+        <div id="seek-hit" role="slider" aria-label="Seek"></div>
+      </div>
+      <div class="controls-row">
+        <div class="ctl-left">
+          <button id="btn-play" class="ic" aria-label="Play/Pause"><svg viewBox="0 0 24 24"><path id="play-icon" fill="currentColor" d="M8 5v14l11-7z"/></svg></button>
+          <button id="btn-back" class="ic" aria-label="Back 10 seconds"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 5V1L7 6l5 5V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z"/></svg></button>
+          <button id="btn-fwd" class="ic" aria-label="Forward 10 seconds"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 5V1l5 5-5 5V7a6 6 0 1 0 6 6h2a8 8 0 1 1-8-8z"/></svg></button>
+          <div id="vol-wrap">
+            <button id="btn-mute" class="ic" aria-label="Mute"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4z"/></svg></button>
+            <input id="vol" type="range" min="0" max="1" step="0.02" value="0.75" aria-label="Volume">
+          </div>
+          <span id="time-now" class="time">0:00</span><span class="time-sep">/</span><span id="time-dur" class="time muted">0:00</span>
+        </div>
+        <div class="ctl-right">
+          <div id="server-chip" class="chip" title="Change server">Server 1</div>
+          <div id="speed-chip" class="chip" title="Playback speed">1x</div>
+          <div id="quality-chip" class="chip" title="Quality">Auto</div>
+          <button id="btn-subs" class="chip" title="Subtitles">CC</button>
+          <button id="btn-audio" class="chip" title="Audio fix">Audio</button>
+          <button id="btn-next" class="chip" title="Next episode" hidden>Next Ep</button>
+          <button id="btn-episodes" class="ic" aria-label="Episodes" title="Episodes"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 5h16v4H4V5zm0 6h16v4H4v-4zm0 6h16v4H4v-4z" transform="scale(0.9) translate(1.3 1.3)"/></svg></button>
+          <button id="btn-settings" class="ic" aria-label="Settings"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.14 12.94a7.07 7.07 0 0 0 .06-.94 7.07 7.07 0 0 0-.06-.94l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.61-.22l-2.49 1a7.3 7.3 0 0 0-1.63-.94l-.38-2.65A.5.5 0 0 0 14 2h-4a.5.5 0 0 0-.49.42l-.38 2.65a7.3 7.3 0 0 0-1.63.94l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46a.5.5 0 0 0 .12.64l2.11 1.65c-.04.31-.06.63-.06.94s.02.63.06.94l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46c.13.22.39.31.61.22l2.49-1c.5.38 1.03.7 1.63.94l.38 2.65c.05.24.26.42.49.42h4a.5.5 0 0 0 .49-.42l.38-2.65a7.3 7.3 0 0 0 1.63-.94l2.49 1c.22.09.48 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.65zM12 15.5A3.5 3.5 0 1 1 15.5 12 3.5 3.5 0 0 1 12 15.5z"/></svg></button>
+          <button id="btn-pip" class="ic only-wide" aria-label="Picture in picture"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 11h-8v6h8v-6zm4 8V5a2 2 0 0 0-2-2H3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h18a2 2 0 0 1-2-2zm-2 .5H3V5h18v14.5z"/></svg></button>
+          <button id="btn-full" class="ic" aria-label="Fullscreen"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <div id="loading-bar" hidden>
+      <span id="load-label">Loading</span><span id="load-dots"></span>
+      <span id="load-elapsed">Elapsed: 0s</span>
+    </div>
+
+    <div id="panel-servers" class="panel" hidden></div>
+    <div id="panel-quality" class="panel" hidden></div>
+    <div id="panel-speed" class="panel" hidden></div>
+    <div id="panel-subs" class="panel" hidden></div>
+    <div id="panel-audio" class="panel" hidden></div>
+    <div id="panel-settings" class="panel" hidden></div>
+    <div id="panel-episodes" class="panel episodes-panel" hidden></div>
+    <div id="toast-host"></div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+<script src="/v/modules/subtitles.js"></script>
+<script src="/v/modules/audiofix.js"></script>
+<script src="/v/modules/skipintro.js"></script>
+<script src="/v/modules/pstore.js"></script>
+<script src="/v/modules/router.js"></script>
+<script src="/v/modules/uikit.js"></script>
+<script src="/v/modules/layoutconf.js"></script>
+<script src="/v/app.js"></script>
+</body>
+</html>
